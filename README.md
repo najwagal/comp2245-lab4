@@ -30,5 +30,9 @@ read the `catalogue` database in MySQL.
    file system won't work, because `fetch()` needs the server.
 
 ## Browsers tested
+# COMP2245 Lab 4 - Library Search Application
 
-- 
+## Tested Browsers
+- Google Chrome
+- Microsoft Edge
+- Firefox
