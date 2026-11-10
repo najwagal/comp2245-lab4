@@ -3,6 +3,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const searchForm = document.querySelector('#search-form'); 
     const resultsTableBody = document.querySelector('table tbody'); 
     const statusDiv = document.querySelector('#status');
+    const searchButton = searchForm.querySelector('button, input[type="submit"]');
+    const availableCheckbox = searchForm.querySelector('input[name="available"]');
+    const queryInput = searchForm.querySelector('input[name="q"]');
 
     // 1. Fetch subjects.php when the page loads
     fetch('subjects.php')
@@ -30,19 +33,25 @@ document.addEventListener('DOMContentLoaded', () => {
             event.preventDefault(); // Prevent full page reload on submit
         }
 
-        // Build query string from the form
+        // 2. While search is running, disable the Search button and set #status to "Searching…"
+        if (searchButton) {
+            searchButton.disabled = true;
+        }
+        statusDiv.textContent = 'Searching…';
+
+        // 1. Build the query string from the form
         const params = new URLSearchParams(new FormData(searchForm)).toString();
 
         fetch(`books.php?${params}`)
             .then(response => {
-                // Check response.ok
+                // 2. Check response.ok
                 if (!response.ok) {
                     throw new Error('Failed to fetch books');
                 }
                 return response.json();
             })
             .then(books => {
-                // Update #status message based on results count
+                // Set status message based on results count
                 if (books.length === 0) {
                     statusDiv.textContent = 'No books match your search.';
                 } else if (books.length === 1) {
@@ -51,7 +60,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     statusDiv.textContent = `${books.length} books found.`;
                 }
 
-                // Map and build table rows using replaceChildren
+                // Build table rows
                 const rows = books.map(book => {
                     const tr = document.createElement('tr');
 
@@ -82,8 +91,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 resultsTableBody.replaceChildren(...rows);
             })
             .catch(error => {
+                // 3. If a search fails, empty the table and set #status
                 console.error('Error fetching books:', error);
-                statusDiv.textContent = 'An error occurred while fetching books.';
+                resultsTableBody.replaceChildren();
+                statusDiv.textContent = "Couldn't load the books. Please try again.";
+            })
+            .finally(() => {
+                // 2. Enable the button again when the search ends, whether it worked or not
+                if (searchButton) {
+                    searchButton.disabled = false;
+                }
             });
     }
 
@@ -93,7 +110,16 @@ document.addEventListener('DOMContentLoaded', () => {
     // Call function when the form is submitted
     searchForm.addEventListener('submit', loadBooks);
 
-    // Optional: Update dynamically as the user types or toggles filters
-    searchForm.addEventListener('input', loadBooks);
-    searchForm.addEventListener('change', loadBooks);
+    // 1. Run the search when the Subject list or the checkbox changes
+    if (subjectSelect) {
+        subjectSelect.addEventListener('change', loadBooks);
+    }
+    if (availableCheckbox) {
+        availableCheckbox.addEventListener('change', loadBooks);
+    }
+
+    // Optional: live search as typing in query
+    if (queryInput) {
+        queryInput.addEventListener('input', loadBooks);
+    }
 });
